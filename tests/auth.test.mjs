@@ -1,0 +1,5 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {createCredential,verifyCredential,validateSettings,emptySettings} from '../electron/auth.mjs';
+test('密码只保存派生值，相同密码使用不同随机盐',async()=>{const password='testing-only-记录123';const a=await createCredential(password),b=await createCredential(password);assert.notEqual(a.salt,b.salt);assert.notEqual(a.hash,b.hash);assert.equal(JSON.stringify(a).includes(password),false);assert.equal(await verifyCredential(password,a),true);assert.equal(await verifyCredential('wrong-password',a),false);assert.equal(await verifyCredential(password,JSON.parse(JSON.stringify(a))),true);});
+test('拒绝过短密码和损坏配置，避免静默取消验证',async()=>{await assert.rejects(createCredential('short'));await assert.rejects(createCredential('a'.repeat(257)));assert.deepEqual(validateSettings(emptySettings()),{version:1,skipPrompt:false,credential:null});assert.throws(()=>validateSettings({version:1,skipPrompt:true,credential:{hash:'broken'}}));assert.throws(()=>validateSettings({version:2,skipPrompt:false,credential:null}));});

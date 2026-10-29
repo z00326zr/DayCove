@@ -1,0 +1,3 @@
+export const defaultPreferences={fontSize:16,lineHeight:1.9,fontFamily:'sans',pageWidth:'comfortable',defaultMode:'visual'};
+const options={fontSize:[14,16,18,20],lineHeight:[1.6,1.9,2.2],fontFamily:['sans','serif','mono'],pageWidth:['comfortable','wide'],defaultMode:['visual','markdown','split']};
+export function validatePreferences(value){if(!value||typeof value!=='object'||Array.isArray(value))throw Error('写作配置无效');const result={...defaultPreferences};for(const key of Object.keys(value)){if(!options[key]||!options[key].includes(value[key]))throw Error('写作配置无效');result[key]=value[key];}return result;}

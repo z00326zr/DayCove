@@ -1,0 +1,14 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {mkdtemp,writeFile,readFile,readdir,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+const {Library}=createRequire(import.meta.url)('../electron/library.cjs');
+const image='data:image/png;base64,aGVsbG8=';
+const e={id:'one',type:'diary',date:'2026-10-27',title:'测试',tags:'生活',content:`<p>正文</p><img src="${image}">`,markdown:`![照片](${image})`,deleted:false,updated:'2026-10-27T00:00:00Z'};
+async function fixture(fn){const root=await mkdtemp(path.join(tmpdir(),'ediary-db-'));let library;try{library=await new Library(root).open();await fn(library,root);}finally{await library?.close();await rm(root,{recursive:true,force:true});}}
+test('SQLite 保存并在重新打开后读取，图片独立存放且去重',()=>fixture(async(lib,root)=>{await lib.save({version:1,entries:[e]});let result=await lib.load();assert.match(result.entries[0].content,/ediary-asset:/);assert.equal((await readdir(lib.attachments)).length,1);assert.equal(result.entries[0].markdown.includes(image),false);await lib.close();const next=await new Library(root).open();try{assert.deepEqual(await next.load(),result);}finally{await next.close();}}));
+test('完整备份在另一台电脑恢复时还原图片并避免重复导入',()=>fixture(async(lib)=>{await lib.save({version:1,entries:[e]});const raw=await lib.createBackup();assert.ok(raw.includes(image));assert.ok(!raw.includes('ediary-asset:'));await fixture(async(target)=>{const first=await target.importBackup(raw);assert.equal(first.added,1);assert.equal(first.conflicts,0);const second=await target.importBackup(raw);assert.equal(second.added,0);assert.equal(second.conflicts,0);const portable=await target.portable();assert.deepEqual(portable.entries,[e]);});}));
+test('旧 JSON 库先备份再迁移，重启不会重复迁移',async()=>{const root=await mkdtemp(path.join(tmpdir(),'ediary-migrate-'));try{await writeFile(path.join(root,'library.json'),JSON.stringify({version:1,entries:[e]}));let lib=await new Library(root).open();assert.equal((await lib.load()).entries.length,1);assert.equal((await readdir(path.join(root,'backups'))).length,1);await lib.close();lib=await new Library(root).open();assert.equal((await lib.load()).entries.length,1);await lib.close();assert.equal(JSON.parse(await readFile(path.join(root,'library.json'),'utf8')).entries[0].content,e.content);}finally{await rm(root,{recursive:true,force:true});}});
+test('无效附件或越界路径被拒绝，失败的保存不写入部分记录',()=>fixture(async(lib)=>{await assert.rejects(lib.save({version:1,entries:[e,{...e,id:'two',content:'<img src="ediary-asset://image/'+ 'a'.repeat(64)+'.png">'}]}));assert.equal((await lib.load()).entries.length,0);assert.throws(()=>lib.resolveAsset('ediary-asset://image/../../security.json'));assert.throws(()=>lib.resolveAsset('file:///etc/passwd'));}));

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <title>拾日匣</title>
+  <desc>书页收入收藏匣，日光圆点象征被珍藏的每一天。</desc>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#245F65"/>
+  <path d="M19 18h18v25H19z" fill="#87B8AD"/>
+  <path d="M24 13h12l8 8v22H24V13Z" fill="#F7FAF8"/>
+  <path d="M36 13v8h8" fill="#C7E7DD"/>
+  <path d="M29 27h10M29 32h7" stroke="#245F65" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M14 35h11l4 5h6l4-5h11v14a3 3 0 0 1-3 3H17a3 3 0 0 1-3-3V35Z" fill="#C7E7DD"/>
+  <circle cx="48" cy="15" r="4" fill="#E7C88C"/>
+</svg>
